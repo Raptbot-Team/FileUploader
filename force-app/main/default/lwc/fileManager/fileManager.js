@@ -6,6 +6,7 @@ import { RefreshEvent } from 'lightning/refresh';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { getObjectInfo } from 'lightning/uiObjectInfoApi';
 import { getRelatedListRecords } from 'lightning/uiRelatedListApi';
+import packageNameSpace from '@salesforce/label/c.Package_Namespace';
 import { refreshApex } from '@salesforce/apex';
 
 // eslint-disable-next-line new-cap
@@ -34,6 +35,8 @@ export default class FileManager extends NavigationMixin(LightningElement) {
     processedFiles = initialFileCount;
     columns = columns;
     sortedFileData;
+    namespace = packageNameSpace;
+    namespaceFrameSrc;
 
     @wire(CurrentPageReference)
     getStateParameters(currentPageReference) { if (currentPageReference.type === "standard__quickAction") { this.isModalOpen = true; } }
@@ -99,6 +102,9 @@ export default class FileManager extends NavigationMixin(LightningElement) {
     };
 
     connectedCallback() {
+        let domainUrl = '';
+        if (!import.meta.env.SSR) { domainUrl = window.location.origin; }
+        if(this.namespace){ this.namespaceFrameSrc = `${domainUrl}/apex/${this.namespace}__fileUploader`; }
         if (!import.meta.env.SSR) { window.addEventListener('message', this.handleMessageEvent); }
     }
 
@@ -213,16 +219,13 @@ export default class FileManager extends NavigationMixin(LightningElement) {
             fileInput.click();
             fileInput.onchange = (event) => { this.handleFileChange(event); };
             // Clean up the event listener when the component is destroyed
-            this.addEventListener('destroy', () => { 
-                if (typeof window !== 'undefined'){ document.removeEventListener('keydown', handleEnterKey); }
-            });
+            this.addEventListener('destroy', () => { if (typeof window !== 'undefined'){ document.removeEventListener('keydown', handleEnterKey); } });
         }
     }
 
     handleFileChange(event) {
         const { files } = event.target;
         if (files.length) {
-            // Convert to array if multiple files
             const filesArray = Array.from(files);
             this.uploadFiles(filesArray);
         }
